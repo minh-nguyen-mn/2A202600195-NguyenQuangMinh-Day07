@@ -106,8 +106,6 @@ Tài liệu pháp lý thường dài và không đều về cấu trúc câu. Fi
 
 ### So Sánh: Strategy của tôi vs Baseline
 
-### So Sánh: Strategy của tôi vs Baseline
-
 | Tài liệu | Strategy | Chunk Count | Avg Length | Retrieval Quality? |
 |-----------|----------|-------------|------------|--------------------|
 | khach_hang.txt | SentenceChunker — best baseline | 116 | 339 | Tốt — giữ nguyên câu hoàn chỉnh |
