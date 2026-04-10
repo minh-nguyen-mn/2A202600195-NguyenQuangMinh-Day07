@@ -264,33 +264,10 @@ Chạy 5 benchmark queries của nhóm trên implementation cá nhân của bạ
 | # | Query | Top-1 Retrieved Chunk (tóm tắt) | Score | Relevant? | Agent Answer (tóm tắt) |
 |---|-------|--------------------------------|-------|-----------|------------------------|
 | 1 | Khách hàng có thể hủy chuyến xe trong bao lâu mà không bị tính phí? | Khách hàng có thể hủy chuyến xe trước khi tài xế tới lấy hàng mà không bị tính phí. | 0.28 | ❌ | Không trả đúng 5 phút |
-| 2 | Tài xế cần cung cấp những giấy tờ gì khi đăng ký tham gia Xanh SM? | Tài xế cần cung cấp các giấy tờ sau khi đăng ký tham gia Xanh SM Bike:
-
-- Căn cước công dân/Chứng minh nhân dân/Hộ chiếu (thời hạn sử dụng còn tối thiểu 1 tháng).
-- Bằng lái xe máy A1/A2.
-- Lý lịch tư pháp (LLTP): Bản gốc LLTP số 02 (không quá 06 tháng) hoặc giấy hẹn LLTP (giấy hẹn LLTP chỉ là giấy tạm thời, trong 60 ngày kể từ khi đăng ký tài khoản Tài xế cần bổ sung bản gốc).        
-- Tài khoản ngân hàng chính chủ.
-- Sim chính chủ. | 0.30 | ✅ | Trả đúng giấy tờ |
+| 2 | Tài xế cần cung cấp những giấy tờ gì khi đăng ký tham gia Xanh SM? | Tài xế cần cung cấp các giấy tờ sau khi đăng ký tham gia Xanh SM:<br>- Căn cước công dân/Chứng minh nhân dân/Hộ chiếu (thời hạn sử dụng còn tối thiểu 1 tháng).<br>- Bằng lái xe máy A1/A2.<br>- Lý lịch tư pháp (LLTP): Bản gốc LLTP số 02 (không quá 06 tháng) hoặc giấy hẹn LLTP (giấy hẹn LLTP chỉ là giấy tạm thời, trong 60 ngày kể từ khi đăng ký tài khoản Tài xế cần bổ sung bản gốc).<br>- Tài khoản ngân hàng chính chủ.<br>- Sim chính chủ. | 0.30 | ✅ | Trả đúng giấy tờ |
 | 3 | Xanh SM xử lý thông tin cá nhân của khách hàng như thế nào? | Xanh SM xử lý thông tin cá nhân của khách hàng bằng cách không tiết lộ dữ liệu cá nhân trừ khi việc tiết lộ đó là cần thiết để xử lý yêu cầu của khách hàng và khi khách hàng đồng ý với các quy định về bảo mật và bảo vệ dữ liệu cá nhân của nền tảng. | 0.35 | ✅ | Trả đúng (bảo vệ, không share) |
-| 4 | Quy trình giao hàng Xanh Express diễn ra như thế nào? | Quy trình giao hàng Xanh Express diễn ra như sau:
-
-1. **Bật chế độ trực tuyến và nhận Đơn Hàng**: Đối tác vận chuyển bật chế độ trực tuyến để nhận đơn hàng.
-2. **Xác nhận lệnh nhận Đơn Hàng**: Đối tác xác nhận lệnh nhận đơn hàng từ ứng dụng.
-3. **Bắt đầu giao hàng**:
-   - Đối tác xác nhận đã lấy hàng trên ứng dụng.
-   - Cung cấp sản phẩm cho người dùng theo yêu cầu trên ứng dụng.
-   - Xác nhận giao hàng thành công hoặc thất bại trên ứng dụng.
-   - Liên hệ với người dùng để hoàn hàng nếu cần. | 0.33 | ✅ | Đúng flow |
-| 5 | Nhà hàng cần đáp ứng các tiêu chuẩn gì để hợp tác với Xanh SM? | Nhà hàng cần đáp ứng các tiêu chuẩn sau để hợp tác với Xanh SM:
-
-1. Giấy tờ tùy thân (CMND/CCCD hoặc Hộ chiếu).
-2. Giấy phép kinh doanh (bắt buộc với Hộ kinh doanh và Công ty).
-3. Giấy ủy quyền cho người đại diện ký thay (nếu có).
-2. Giấy phép kinh doanh (bắt buộc với Hộ kinh doanh và Công ty).
-3. Giấy ủy quyền cho người đại diện ký thay (nếu có).
-4. Giấy chứng nhận vệ sinh ATTP (bắt buộc với Công ty, khuyến khích với Cá nhân/Hộ kinh doanh).     
-5. Bộ menu và hình ảnh (bao gồm ảnh thực đơn, ảnh bìa, ảnh đại diện, ảnh từng món, ảnh mặt tiền quán).
-6. Tài khoản ngân hàng (đăng ký thanh toán tự động, thông tin tài khoản phải trùng với giấy tờ pháp lý tương ứng). | 0.29 | ⚠️ partial | Thiếu một số điều kiện |
+| 4 | Quy trình giao hàng Xanh Express diễn ra như thế nào? | Quy trình giao hàng Xanh Express diễn ra như sau:<br>1. **Bật chế độ trực tuyến và nhận Đơn Hàng**: Đối tác vận chuyển bật chế độ trực tuyến để nhận đơn hàng.<br>2. **Xác nhận lệnh nhận Đơn Hàng**: Đối tác xác nhận lệnh nhận đơn hàng từ ứng dụng.<br>3. **Bắt đầu giao hàng**:<br>- Đối tác xác nhận đã lấy hàng trên ứng dụng.<br>- Cung cấp sản phẩm cho người dùng theo yêu cầu trên ứng dụng.<br>- Xác nhận giao hàng thành công hoặc thất bại trên ứng dụng.<br>- Liên hệ với người dùng để hoàn hàng nếu cần. | 0.33 | ✅ | Đúng flow |
+| 5 | Nhà hàng cần đáp ứng các tiêu chuẩn gì để hợp tác với Xanh SM? | Nhà hàng cần đáp ứng các tiêu chuẩn sau để hợp tác với Xanh SM:<br>1. Giấy tờ tùy thân (CMND/CCCD hoặc Hộ chiếu).<br>2. Giấy phép kinh doanh (bắt buộc với Hộ kinh doanh và Công ty).<br>3. Giấy ủy quyền cho người đại diện ký thay (nếu có).<br>2. Giấy phép kinh doanh (bắt buộc với Hộ kinh doanh và Công ty).<br>3. Giấy ủy quyền cho người đại diện ký thay (nếu có).<br>4. Giấy chứng nhận vệ sinh ATTP (bắt buộc với Công ty, khuyến khích với Cá nhân/Hộ kinh doanh).<br>5. Bộ menu và hình ảnh (bao gồm ảnh thực đơn, ảnh bìa, ảnh đại diện, ảnh từng món, ảnh mặt tiền quán).<br>6. Tài khoản ngân hàng (đăng ký thanh toán tự động, thông tin tài khoản phải trùng với giấy tờ pháp lý tương ứng). | 0.29 | ⚠️ partial | Thiếu một số điều kiện |
 
 **Bao nhiêu queries trả về chunk relevant trong top-3?** 4 / 5
 Hệ thống hoạt động tốt với các query có keyword rõ ràng (driver, data, delivery). Tuy nhiên, với các query cần thông tin cụ thể (ví dụ thời gian hủy chuyến), retrieval bị ảnh hưởng bởi các document lớn như “Điều khoản chung”, dẫn đến kết quả không chính xác.
