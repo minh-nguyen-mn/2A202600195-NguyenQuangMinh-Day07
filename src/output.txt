@@ -1,0 +1,625 @@
+
+================================================================================
+File: agent.py
+Size: 1.24 kB
+================================================================================
+
+from typing import Callable
+
+from .store import EmbeddingStore
+
+
+class KnowledgeBaseAgent:
+    """
+    An agent that answers questions using a vector knowledge base.
+
+    Retrieval-augmented generation (RAG) pattern:
+        1. Retrieve top-k relevant chunks from the store.
+        2. Build a prompt with the chunks as context.
+        3. Call the LLM to generate an answer.
+    """
+
+    def __init__(self, store: EmbeddingStore, llm_fn: Callable[[str], str]) -> None:
+        # TODO: store references to store and llm_fn
+        # pass
+        self.store = store
+        self.llm_fn = llm_fn
+
+    def answer(self, question: str, top_k: int = 3) -> str:
+        # TODO: retrieve chunks, build prompt, call llm_fn
+        # raise NotImplementedError("Implement KnowledgeBaseAgent.answer")
+        results = self.store.search(question, top_k=top_k)
+
+        context = "\n\n".join(
+            f"[{i+1}] {r['content']}"
+            for i, r in enumerate(results)
+        )
+
+        prompt = f"""You are a helpful assistant.
+
+Use the context below to answer the question.
+
+Context:
+{context}
+
+Question: {question}
+
+Answer concisely and base only on the context.
+"""
+
+        return self.llm_fn(prompt)
+
+================================================================================
+File: chunking.py
+Size: 5.58 kB
+================================================================================
+
+from __future__ import annotations
+
+import math
+import re
+
+
+class FixedSizeChunker:
+    """
+    Split text into fixed-size chunks with optional overlap.
+
+    Rules:
+        - Each chunk is at most chunk_size characters long.
+        - Consecutive chunks share overlap characters.
+        - The last chunk contains whatever remains.
+        - If text is shorter than chunk_size, return [text].
+    """
+
+    def __init__(self, chunk_size: int = 500, overlap: int = 50) -> None:
+        self.chunk_size = chunk_size
+        self.overlap = overlap
+
+    def chunk(self, text: str) -> list[str]:
+        if not text:
+            return []
+        if len(text) <= self.chunk_size:
+            return [text]
+
+        step = self.chunk_size - self.overlap
+        chunks: list[str] = []
+        for start in range(0, len(text), step):
+            chunk = text[start : start + self.chunk_size]
+            chunks.append(chunk)
+            if start + self.chunk_size >= len(text):
+                break
+        return chunks
+
+
+class SentenceChunker:
+    """
+    Split text into chunks of at most max_sentences_per_chunk sentences.
+
+    Sentence detection: split on ". ", "! ", "? " or ".\n".
+    Strip extra whitespace from each chunk.
+    """
+
+    def __init__(self, max_sentences_per_chunk: int = 3) -> None:
+        self.max_sentences_per_chunk = max(1, max_sentences_per_chunk)
+
+    def chunk(self, text: str) -> list[str]:
+        # TODO: split into sentences, group into chunks
+        # raise NotImplementedError("Implement SentenceChunker.chunk")
+        if not text:
+            return []
+
+        # split sentences
+        sentences = re.split(r'(?<=[.!?])\s+|\n', text)
+        sentences = [s.strip() for s in sentences if s and s.strip()]
+
+        chunks = []
+        for i in range(0, len(sentences), self.max_sentences_per_chunk):
+            chunk = " ".join(sentences[i:i + self.max_sentences_per_chunk]).strip()
+            if chunk:
+                chunks.append(chunk)
+
+        return chunks
+
+class RecursiveChunker:
+    """
+    Recursively split text using separators in priority order.
+
+    Default separator priority:
+        ["\n\n", "\n", ". ", " ", ""]
+    """
+
+    DEFAULT_SEPARATORS = ["\n\n", "\n", ". ", " ", ""]
+
+    def __init__(self, separators: list[str] | None = None, chunk_size: int = 500) -> None:
+        self.separators = self.DEFAULT_SEPARATORS if separators is None else list(separators)
+        self.chunk_size = chunk_size
+
+    def chunk(self, text: str) -> list[str]:
+        # TODO: implement recursive splitting strategy
+        # raise NotImplementedError("Implement RecursiveChunker.chunk")
+        if not text:
+            return []
+        return self._split(text, self.separators)
+    
+    def _split(self, current_text: str, remaining_separators: list[str]) -> list[str]:
+        # TODO: recursive helper used by RecursiveChunker.chunk
+        # raise NotImplementedError("Implement RecursiveChunker._split")
+        current_text = current_text.strip()
+
+        if len(current_text) <= self.chunk_size:
+            return [current_text] if current_text else []
+
+        if not remaining_separators:
+            # hard split
+            return [
+                current_text[i:i + self.chunk_size]
+                for i in range(0, len(current_text), self.chunk_size)
+            ]
+
+        sep = remaining_separators[0]
+        parts = current_text.split(sep) if sep else list(current_text)
+
+        chunks = []
+        for part in parts:
+            part = part.strip()
+            if not part:
+                continue
+
+            if len(part) <= self.chunk_size:
+                chunks.append(part)
+            else:
+                chunks.extend(self._split(part, remaining_separators[1:]))
+
+        return chunks
+
+def _dot(a: list[float], b: list[float]) -> float:
+    return sum(x * y for x, y in zip(a, b))
+
+
+def compute_similarity(vec_a: list[float], vec_b: list[float]) -> float:
+    """
+    Compute cosine similarity between two vectors.
+
+    cosine_similarity = dot(a, b) / (||a|| * ||b||)
+
+    Returns 0.0 if either vector has zero magnitude.
+    """
+    # TODO: implement cosine similarity formula
+    # raise NotImplementedError("Implement compute_similarity")
+    if not vec_a or not vec_b:
+        return 0.0
+
+    dot = _dot(vec_a, vec_b)
+    norm_a = math.sqrt(sum(x * x for x in vec_a))
+    norm_b = math.sqrt(sum(x * x for x in vec_b))
+
+    if norm_a == 0 or norm_b == 0:
+        return 0.0
+
+    return dot / (norm_a * norm_b)
+
+class ChunkingStrategyComparator:
+    """Run all built-in chunking strategies and compare their results."""
+
+    def compare(self, text: str, chunk_size: int = 200) -> dict:
+        # TODO: call each chunker, compute stats, return comparison dict
+        # raise NotImplementedError("Implement ChunkingStrategyComparator.compare")
+        fixed = FixedSizeChunker(chunk_size=chunk_size).chunk(text)
+        sentence = SentenceChunker().chunk(text)
+        recursive = RecursiveChunker(chunk_size=chunk_size).chunk(text)
+
+        def stats(chunks):
+            return {
+                "count": len(chunks),
+                "avg_length": sum(len(c) for c in chunks) / len(chunks) if chunks else 0,
+                "chunks": chunks
+            }
+
+        return {
+            "fixed_size": stats(fixed),
+            "by_sentences": stats(sentence),   # 🔥 IMPORTANT rename
+            "recursive": stats(recursive),
+        }
+
+================================================================================
+File: embeddings.py
+Size: 3.75 kB
+================================================================================
+
+from __future__ import annotations
+
+import hashlib
+import math
+
+LOCAL_EMBEDDING_MODEL = "all-MiniLM-L6-v2"
+# OPENAI_EMBEDDING_MODEL = "text-embedding-3-small"
+OPENAI_EMBEDDING_MODEL = "openai/text-embedding-3-small"
+EMBEDDING_PROVIDER_ENV = "EMBEDDING_PROVIDER"
+
+
+class MockEmbedder:
+    """Deterministic embedding backend used by tests and default classroom runs."""
+
+    def __init__(self, dim: int = 64) -> None:
+        self.dim = dim
+        self._backend_name = "mock embeddings fallback"
+
+    def __call__(self, text: str) -> list[float]:
+        digest = hashlib.md5(text.encode()).hexdigest()
+        seed = int(digest, 16)
+        vector = []
+        for _ in range(self.dim):
+            seed = (seed * 1664525 + 1013904223) & 0xFFFFFFFF
+            vector.append((seed / 0xFFFFFFFF) * 2 - 1)
+        norm = math.sqrt(sum(value * value for value in vector)) or 1.0
+        return [value / norm for value in vector]
+
+
+class LocalEmbedder:
+    """Sentence Transformers-backed local embedder."""
+
+    def __init__(self, model_name: str = LOCAL_EMBEDDING_MODEL) -> None:
+        from sentence_transformers import SentenceTransformer
+
+        self.model_name = model_name
+        self._backend_name = model_name
+        self.model = SentenceTransformer(model_name)
+
+    def __call__(self, text: str) -> list[float]:
+        embedding = self.model.encode(text, normalize_embeddings=True)
+        if hasattr(embedding, "tolist"):
+            return embedding.tolist()
+        return [float(value) for value in embedding]
+
+
+# class OpenAIEmbedder:
+#     """OpenAI embeddings API-backed embedder."""
+
+#     def __init__(self, model_name: str = OPENAI_EMBEDDING_MODEL) -> None:
+#         from openai import OpenAI
+
+#         self.model_name = model_name
+#         self._backend_name = model_name
+#         self.client = OpenAI()
+
+#     def __call__(self, text: str) -> list[float]:
+#         response = self.client.embeddings.create(model=self.model_name, input=text)
+#         return [float(value) for value in response.data[0].embedding]
+
+class OpenAIEmbedder:
+    """OpenRouter embeddings API-backed embedder."""
+
+    def __init__(self, model_name: str = OPENAI_EMBEDDING_MODEL) -> None:
+        import os
+        import requests
+
+        self.model_name = model_name
+        self._backend_name = f"openrouter/{model_name}"
+
+        self.api_key = os.getenv("OPENROUTER_API_KEY")
+        if not self.api_key:
+            raise ValueError("Missing OPENROUTER_API_KEY in environment")
+
+        self.base_url = "https://openrouter.ai/api/v1/embeddings"
+        self.session = requests.Session()
+
+    def __call__(self, text: str) -> list[float]:
+        print(f"🔎 Embedding chunk ({len(text)} chars)...")
+        
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json",
+            "HTTP-Referer": "http://localhost",
+            "X-Title": "AI-in-Action-Lab",
+        }
+
+        payload = {
+            "model": self.model_name,
+            "input": text,
+        }
+
+        response = self.session.post(
+            self.base_url,
+            json=payload,
+            headers=headers,
+            timeout=30,
+        )
+
+        try:
+            data = response.json()
+        except Exception:
+            raise RuntimeError(f"Invalid response: {response.text}")
+
+        # ✅ HANDLE FAILURE GRACEFULLY
+        if response.status_code != 200 or "data" not in data:
+            print("⚠️ Embedding failed → fallback to mock")
+            return _mock_embed(text)
+
+        return [float(x) for x in data["data"][0]["embedding"]]
+    
+_mock_embed = MockEmbedder()
+
+
+================================================================================
+File: llm_openrouter.py
+Size: 1.19 kB
+================================================================================
+
+import os
+import requests
+from dotenv import load_dotenv
+
+load_dotenv()
+
+
+class OpenRouterLLM:
+    def __init__(
+        self,
+        model: str | None = None,
+        api_key: str | None = None,
+    ):
+        self.api_key = api_key or os.getenv("OPENROUTER_API_KEY")
+        self.model = model or os.getenv("OPENROUTER_MODEL", "openai/gpt-4o-mini")
+
+        if not self.api_key:
+            raise ValueError("Missing OPENROUTER_API_KEY in .env")
+
+        self.base_url = "https://openrouter.ai/api/v1/chat/completions"
+
+    def __call__(self, prompt: str) -> str:
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json",
+        }
+
+        payload = {
+            "model": self.model,
+            "messages": [
+                {"role": "user", "content": prompt}
+            ],
+            "temperature": 0.2,
+        }
+
+        response = requests.post(self.base_url, headers=headers, json=payload)
+
+        if response.status_code != 200:
+            raise RuntimeError(f"OpenRouter error: {response.text}")
+
+        return response.json()["choices"][0]["message"]["content"]
+
+================================================================================
+File: models.py
+Size: 399 B
+================================================================================
+
+from dataclasses import dataclass, field
+
+
+@dataclass
+class Document:
+    """
+    A text document with optional metadata.
+
+    Fields:
+        id:       Unique identifier string.
+        content:  The raw text content.
+        metadata: Arbitrary key-value metadata (e.g. source, date, author).
+    """
+
+    id: str
+    content: str
+    metadata: dict = field(default_factory=dict)
+
+
+================================================================================
+File: store.py
+Size: 6.03 kB
+================================================================================
+
+from __future__ import annotations
+
+from typing import Any, Callable
+
+# from .chunking import _dot
+from .chunking import compute_similarity, FixedSizeChunker
+from .embeddings import _mock_embed
+from .models import Document
+
+
+class EmbeddingStore:
+    """
+    A vector store for text chunks.
+
+    Tries to use ChromaDB if available; falls back to an in-memory store.
+    The embedding_fn parameter allows injection of mock embeddings for tests.
+    """
+
+    def __init__(
+        self,
+        collection_name: str = "documents",
+        embedding_fn: Callable[[str], list[float]] | None = None,
+    ) -> None:
+        self._embedding_fn = embedding_fn or _mock_embed
+        self._collection_name = collection_name
+        self._use_chroma = False
+        self._store: list[dict[str, Any]] = []
+        self._collection = None
+        self._next_index = 0
+        # self._chunker = FixedSizeChunker(chunk_size=500, overlap=50)
+        # self._chunker = FixedSizeChunker(chunk_size=300, overlap=30)
+        self._chunker = FixedSizeChunker(chunk_size=800, overlap=100)
+        
+        try:
+            import chromadb  # noqa: F401
+
+            # TODO: initialize chromadb client + collection
+            self._use_chroma = True
+            self._collection = None
+        except Exception:
+            self._use_chroma = False
+            self._collection = None
+
+    def _make_record(self, doc: Document) -> dict[str, Any]:
+        # TODO: build a normalized stored record for one document
+        # raise NotImplementedError("Implement EmbeddingStore._make_record")
+        chunks = self._chunker.chunk(doc.content)
+
+        records = []
+
+        for i, chunk in enumerate(chunks):
+            print(f"   🔎 Chunk {i+1}/{len(chunks)} ({len(chunk)} chars)")
+            
+            embedding = self._embedding_fn(chunk)
+
+            records.append({
+                "id": f"{doc.id}_{self._next_index}_{i}",
+                "doc_id": doc.id,
+                "content": chunk,
+                "embedding": embedding,
+                "metadata": doc.metadata or {},
+            })
+
+        self._next_index += 1
+        return records
+
+    def _search_records(self, query: str, records: list[dict[str, Any]], top_k: int) -> list[dict[str, Any]]:
+        # TODO: run in-memory similarity search over provided records
+        # raise NotImplementedError("Implement EmbeddingStore._search_records")
+        q_emb = self._embedding_fn(query)
+
+        scored_results = []
+
+        for r in records:
+            # score = _dot(q_emb, r["embedding"])
+            score = compute_similarity(q_emb, r["embedding"])
+            scored_results.append({
+                "id": r["id"],
+                "doc_id": r["doc_id"],
+                "content": r["content"],
+                "embedding": r["embedding"],
+                "metadata": r.get("metadata", {}),
+                "score": score
+            })
+
+        scored_results.sort(key=lambda x: x["score"], reverse=True)
+        return scored_results[:top_k]
+    
+    def add_documents(self, docs: list[Document]) -> None:
+        """
+        Embed each document's content and store it.
+
+        For ChromaDB: use collection.add(ids=[...], documents=[...], embeddings=[...])
+        For in-memory: append dicts to self._store
+        """
+        # TODO: embed each doc and add to store
+        # raise NotImplementedError("Implement EmbeddingStore.add_documents")
+        total_chunks = 0
+
+        for doc in docs:
+            print(f"\n📄 Processing document: {doc.id}")
+
+            records = self._make_record(doc)
+
+            print(f"   → {len(records)} chunks")
+
+            self._store.extend(records)
+            total_chunks += len(records)
+
+            print(f"   → Stored. Total chunks so far: {len(self._store)}")
+
+        print(f"\n✅ DONE: {len(docs)} docs → {total_chunks} chunks")
+
+    def search(self, query: str, top_k: int = 5) -> list[dict[str, Any]]:
+        """
+        Find the top_k most similar documents to query.
+
+        For in-memory: compute dot product of query embedding vs all stored embeddings.
+        """
+        # TODO: embed query, compute similarities, return top_k
+        # raise NotImplementedError("Implement EmbeddingStore.search")
+        return self._search_records(query, self._store, top_k)
+
+    def get_collection_size(self) -> int:
+        """Return the total number of stored chunks."""
+        # TODO
+        # raise NotImplementedError("Implement EmbeddingStore.get_collection_size")
+        return len(self._store)
+
+    def search_with_filter(self, query: str, top_k: int = 3, metadata_filter: dict = None) -> list[dict]:
+        """
+        Search with optional metadata pre-filtering.
+
+        First filter stored chunks by metadata_filter, then run similarity search.
+        """
+        # TODO: filter by metadata, then search among filtered chunks
+        # raise NotImplementedError("Implement EmbeddingStore.search_with_filter")
+        if not metadata_filter:
+            return self.search(query, top_k)
+
+        filtered = []
+        for r in self._store:
+            ok = True
+            for k, v in metadata_filter.items():
+                if r.get("metadata", {}).get(k) != v:
+                    ok = False
+                    break
+            if ok:
+                filtered.append(r)
+
+        return self._search_records(query, filtered, top_k)
+
+    def delete_document(self, doc_id: str) -> bool:
+        """
+        Remove all chunks belonging to a document.
+
+        Returns True if any chunks were removed, False otherwise.
+        """
+        # TODO: remove all stored chunks where metadata['doc_id'] == doc_id
+        # raise NotImplementedError("Implement EmbeddingStore.delete_document")
+        before = len(self._store)
+        self._store = [r for r in self._store if r["doc_id"] != doc_id]
+        return len(self._store) != before
+
+================================================================================
+File: __init__.py
+Size: 851 B
+================================================================================
+
+from .agent import KnowledgeBaseAgent
+from .chunking import (
+    ChunkingStrategyComparator,
+    FixedSizeChunker,
+    RecursiveChunker,
+    SentenceChunker,
+    compute_similarity,
+)
+from .embeddings import (
+    EMBEDDING_PROVIDER_ENV,
+    LOCAL_EMBEDDING_MODEL,
+    OPENAI_EMBEDDING_MODEL,
+    LocalEmbedder,
+    MockEmbedder,
+    OpenAIEmbedder,
+    _mock_embed,
+)
+from .models import Document
+from .store import EmbeddingStore
+
+__all__ = [
+    "Document",
+    "FixedSizeChunker",
+    "SentenceChunker",
+    "RecursiveChunker",
+    "ChunkingStrategyComparator",
+    "compute_similarity",
+    "EmbeddingStore",
+    "KnowledgeBaseAgent",
+    "MockEmbedder",
+    "LocalEmbedder",
+    "OpenAIEmbedder",
+    "_mock_embed",
+    "LOCAL_EMBEDDING_MODEL",
+    "OPENAI_EMBEDDING_MODEL",
+    "EMBEDDING_PROVIDER_ENV",
+]
+
